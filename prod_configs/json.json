@@ -1,0 +1,72 @@
+{
+  "format_type": "json",
+  "version": "1.0",
+  "description": "JSON parser configuration for POS transaction data",
+  "normalization": {
+    "trim_strings": true,
+    "cast_mode": "safe"
+  },
+  "json_encoding": "utf-8",
+  "computed_fields": [],
+  "records": [
+    {
+      "name": "TransactionLog",
+      "select": "$",
+      "context": [
+        {
+          "name": "FileSource",
+          "value": "prod_json.json"
+        }
+      ],
+      "fields": [
+        { "name": "MessageId", "path": "messageId", "type": "int", "nullable": false },
+        { "name": "RecordType", "path": "recordType", "type": "string", "nullable": true },
+        { "name": "SubRecordType", "path": "subRecordType", "type": "string", "nullable": true },
+        { "name": "Source", "path": "source", "type": "string", "nullable": false },
+        { "name": "DataCount", "path": "data", "type": "int", "nullable": true }
+      ]
+    },
+    {
+      "name": "TransactionEvents",
+      "select": "$",
+      "context": [
+        {
+          "name": "FileSource",
+          "value": "prod_json.json"
+        }
+      ],
+      "fields": [
+        { "name": "MessageId", "path": "messageId", "type": "int", "nullable": false },
+        { "name": "TransactionNumber", "path": "data[0].transaction.number", "type": "string", "nullable": true },
+        { "name": "TransactionType", "path": "data[0].transaction.type", "type": "string", "nullable": true },
+        { "name": "TransactionDateTime", "path": "data[0].transaction.dateTime", "type": "string", "nullable": true },
+        { "name": "RegisterNumber", "path": "data[0].terminalInformation.registerNumber", "type": "string", "nullable": true },
+        { "name": "OperatorId", "path": "data[0].employee.operatorId", "type": "int", "nullable": true },
+        { "name": "StoreNumber", "path": "data[0].store.number", "type": "string", "nullable": true }
+      ]
+    },
+    {
+      "name": "SaleHeaders",
+      "select": "$",
+      "context": [
+        {
+          "name": "FileSource",
+          "value": "prod_json.json"
+        }
+      ],
+      "fields": [
+        { "name": "MessageId", "path": "messageId", "type": "int", "nullable": false },
+        { "name": "TransactionNumber", "path": "data[0].header.transactionNumber", "type": "string", "nullable": true },
+        { "name": "TransactionDateTime", "path": "data[0].header.transactionDateTime", "type": "string", "nullable": true },
+        { "name": "TransactionType", "path": "data[0].header.transactionType", "type": "string", "nullable": true },
+        { "name": "ReceiptNumber", "path": "data[0].header.receiptNumber", "type": "string", "nullable": true },
+        { "name": "RegisterNumber", "path": "data[0].header.terminalInformation.registerNumber", "type": "string", "nullable": true },
+        { "name": "OperatorId", "path": "data[0].header.employee.operatorId", "type": "int", "nullable": true },
+        { "name": "StoreNumber", "path": "data[0].header.store.number", "type": "string", "nullable": true },
+        { "name": "GrossAmount", "path": "data[0].header.total.grossAmount", "type": "decimal", "nullable": true },
+        { "name": "NetAmount", "path": "data[0].header.total.netAmount", "type": "decimal", "nullable": true },
+        { "name": "TaxAmount", "path": "data[0].header.total.tax.amount", "type": "decimal", "nullable": true }
+      ]
+    }
+  ]
+}

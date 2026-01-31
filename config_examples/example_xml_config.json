@@ -1,0 +1,111 @@
+{
+  "format_type": "xml",
+  "version": "1.0", /*optional*/
+  "description": "Comprehensive XML parser configuration - demonstrates XPath expressions and all parameters", /*optional*/
+  
+  "continueOnError": false, /*optional*/
+  "ignoreBrokenFiles": false, /*optional*/
+  "max_file_size": null, /*optional*/
+  "max_files": null, /*optional - limits number of files processed*/
+  "file_mask": null, /*optional - regex pattern to filter filenames, e.g., "01-10-2025" or ".*\\.xml$"*/
+  "progress_interval": 10000, /*optional*/
+  
+  "normalization": { /*optional*/
+    "cast_mode": "safe", /*optional*/
+    "strip_whitespace": true, /*optional*/
+    "empty_string_as_null": true /*optional*/
+  },
+  
+  "output": { /*optional*/
+    "flush_every": 1000, /*optional*/
+    "include_rejected": true, /*optional*/
+    "csv_encoding": "utf-8" /*optional*/
+  },
+  
+  "namespaces": { /*optional*/
+    "nax": "http://www.example.com/namespace",
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance"
+  },
+  
+  "computed_fields": [ /*optional*/
+    {
+      "name": "TransactionKey",
+      "type": "string", /*optional*/
+      "formula": "{StoreID}-{Date}-{TransactionID}"
+    },
+    {
+      "name": "TransactionHash",
+      "type": "string", /*optional*/
+      "formula": "hash_md5({StoreID}-{Date}-{TransactionID})"
+    }
+  ],
+  
+  "records": [
+    {
+      "name": "Transactions",
+      "select": "/nax:Root/nax:Transaction",
+      "context": [ /*optional*/
+        {
+          "name": "FileSource",
+          "value": "example.xml" /*optional - but must have value OR from*/
+        },
+        {
+          "name": "BatchID",
+          "from": "/nax:Root/@batchId" /*optional - but must have value OR from*/
+        }
+      ],
+      "fields": [
+        {
+          "name": "TransactionID",
+          "path": "nax:TransactionID",
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "StoreID",
+          "path": "nax:StoreID",
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "Date",
+          "path": "nax:Date",
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "Amount",
+          "path": "nax:Amount",
+          "type": "decimal", /*optional*/
+          "nullable": true, /*optional*/
+          "min_value": 0.0 /*optional*/
+        },
+        {
+          "name": "Quantity",
+          "path": "nax:Quantity",
+          "type": "int", /*optional*/
+          "nullable": true, /*optional*/
+          "min_value": 1, /*optional*/
+          "default": 1 /*optional*/
+        },
+        {
+          "name": "Status",
+          "path": "nax:Status",
+          "type": "string", /*optional*/
+          "nullable": true, /*optional*/
+          "regex": "^(OPEN|CLOSED|VOID)$" /*optional*/
+        },
+        {
+          "name": "TransactionKey",
+          "type": "computed",
+          "computed_field": "TransactionKey"
+        },
+        {
+          "name": "TransactionHash",
+          "type": "computed",
+          "computed_field": "TransactionHash"
+        }
+      ]
+    }
+  ]
+}

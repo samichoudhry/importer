@@ -1,0 +1,174 @@
+{
+  "format_type": "fixed_width",
+  "version": "1.0", /*optional*/
+  "description": "Comprehensive fixed-width parser configuration - demonstrates positional parsing and all parameters", /*optional*/
+  
+  "continueOnError": false, /*optional*/
+  "ignoreBrokenFiles": false, /*optional*/
+  "max_file_size": null, /*optional*/
+  "max_files": null, /*optional - limits number of files processed*/
+  "file_mask": null, /*optional - regex pattern to filter filenames, e.g., "01-10-2025" or ".*\\.txt$"*/
+  "progress_interval": 10000, /*optional*/
+  
+  "normalization": { /*optional*/
+    "cast_mode": "safe", /*optional*/
+    "strip_whitespace": true, /*optional*/
+    "empty_string_as_null": true /*optional*/
+  },
+  
+  "output": { /*optional*/
+    "flush_every": 1000, /*optional*/
+    "include_rejected": true, /*optional*/
+    "csv_encoding": "utf-8" /*optional*/
+  },
+  
+  "fixed_width_encoding": "utf-8", /*optional*/
+  "fixed_width_skip_rows": 0, /*optional*/
+  
+  "computed_fields": [ /*optional*/
+    {
+      "name": "FullAddress",
+      "type": "string", /*optional*/
+      "formula": "{City}, {State} {ZipCode}"
+    },
+    {
+      "name": "RecordKey",
+      "type": "string", /*optional*/
+      "formula": "hash_md5({AccountNumber}-{RecordDate})"
+    }
+  ],
+  
+  "records": [
+    {
+      "name": "Accounts",
+      "context": [ /*optional*/
+        {
+          "name": "FileSource",
+          "value": "accounts.txt" /*optional - but must have value OR from*/
+        }
+      ],
+      "fields": [
+        {
+          "name": "AccountNumber",
+          "start": 0,
+          "width": 10, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "CustomerName",
+          "start": 10,
+          "width": 30, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "RecordDate",
+          "start": 40,
+          "width": 10, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "Balance",
+          "start": 50,
+          "width": 15, /*optional - can use end instead*/
+          "type": "decimal", /*optional*/
+          "nullable": true, /*optional*/
+          "min_value": 0.0 /*optional*/
+        },
+        {
+          "name": "City",
+          "start": 65,
+          "width": 20, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "State",
+          "start": 85,
+          "width": 2, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": true, /*optional*/
+          "regex": "^[A-Z]{2}$" /*optional*/
+        },
+        {
+          "name": "ZipCode",
+          "start": 87,
+          "width": 10, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": true, /*optional*/
+          "regex": "^\\d{5}(-\\d{4})?$" /*optional*/
+        },
+        {
+          "name": "FullAddress",
+          "type": "computed",
+          "computed_field": "FullAddress"
+        },
+        {
+          "name": "RecordKey",
+          "type": "computed",
+          "computed_field": "RecordKey"
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "context": [ /*optional*/
+        {
+          "name": "FileSource",
+          "value": "transactions.txt" /*optional - but must have value OR from*/
+        }
+      ],
+      "fields": [
+        {
+          "name": "TransactionID",
+          "start": 0,
+          "width": 8, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "TransactionType",
+          "start": 8,
+          "width": 2, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": false, /*optional*/
+          "regex": "^(DR|CR)$" /*optional*/
+        },
+        {
+          "name": "Amount",
+          "start": 10,
+          "width": 12, /*optional - can use end instead*/
+          "type": "decimal", /*optional*/
+          "nullable": false, /*optional*/
+          "min_value": 0.0 /*optional*/
+        },
+        {
+          "name": "Currency",
+          "start": 22,
+          "width": 3, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": false, /*optional*/
+          "regex": "^[A-Z]{3}$", /*optional*/
+          "default": "USD" /*optional*/
+        },
+        {
+          "name": "Timestamp",
+          "start": 25,
+          "width": 14, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "Status",
+          "start": 39,
+          "width": 1, /*optional - can use end instead*/
+          "type": "string", /*optional*/
+          "nullable": true, /*optional*/
+          "regex": "^[ACPR]$" /*optional*/
+        }
+      ]
+    }
+  ]
+}

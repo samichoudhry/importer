@@ -1,0 +1,124 @@
+{
+  "format_type": "csv",
+  "version": "1.0", /*optional*/
+  "description": "Comprehensive CSV parser configuration - demonstrates all available parameters", /*optional*/
+  
+  "continueOnError": false, /*optional*/
+  "ignoreBrokenFiles": false, /*optional*/
+  "max_file_size": null, /*optional*/
+  "max_files": null, /*optional - limits number of files processed*/
+  "file_mask": null, /*optional - regex pattern to filter filenames, e.g., "01-10-2025" or ".*\\.csv$"*/
+  "progress_interval": 10000, /*optional*/
+  
+  "normalization": { /*optional*/
+    "cast_mode": "safe", /*optional*/
+    "strip_whitespace": true, /*optional*/
+    "empty_string_as_null": true /*optional*/
+  },
+  
+  "output": { /*optional*/
+    "flush_every": 1000, /*optional*/
+    "include_rejected": true, /*optional*/
+    "csv_encoding": "utf-8" /*optional*/
+  },
+  
+  "csv_delimiter": ",", /*optional*/
+  "csv_quotechar": "\"", /*optional*/
+  "csv_escapechar": null, /*optional*/
+  "csv_doublequote": true, /*optional*/
+  "csv_has_header": true, /*optional*/
+  "csv_skip_rows": 0, /*optional*/
+  "csv_encoding": "utf-8", /*optional*/
+  
+  "computed_fields": [ /*optional*/
+    {
+      "name": "FullName",
+      "type": "string", /*optional*/
+      "formula": "{FirstName} {LastName}"
+    },
+    {
+      "name": "RecordHash",
+      "type": "string", /*optional*/
+      "formula": "hash_md5({CustomerID}-{OrderID})"
+    }
+  ],
+  
+  "records": [
+    {
+      "name": "Orders",
+      "context": [ /*optional*/
+        {
+          "name": "FileSource",
+          "value": "orders.csv" /*optional - but must have value OR from*/
+        }
+      ],
+      "fields": [
+        {
+          "name": "CustomerID",
+          "path": "customer_id",
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "OrderID",
+          "path": "order_id",
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "FirstName", 
+          "path": "first_name",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "LastName", 
+          "path": "last_name",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "OrderDate", 
+          "path": "order_date",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "Amount", 
+          "path": "amount",
+          "type": "decimal", /*optional*/
+          "nullable": true, /*optional*/
+          "min_value": 0.0, /*optional*/
+          "max_value": 999999.99 /*optional*/
+        },
+        {
+          "name": "Quantity",
+          "path": "quantity",
+          "type": "int", /*optional*/
+          "nullable": true, /*optional*/
+          "min_value": 1, /*optional*/
+          "max_value": 10000, /*optional*/
+          "default": 1 /*optional*/
+        },
+        {
+          "name": "Status", 
+          "path": "status",
+          "type": "string", /*optional*/
+          "nullable": true, /*optional*/
+          "regex": "^(pending|completed|cancelled)$", /*optional*/
+          "default": "pending" /*optional*/
+        },
+        {
+          "name": "FullName",
+          "type": "computed",
+          "computed_field": "FullName"
+        },
+        {
+          "name": "RecordHash",
+          "type": "computed",
+          "computed_field": "RecordHash"
+        }
+      ]
+    }
+  ]
+}

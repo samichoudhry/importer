@@ -1,0 +1,62 @@
+{
+  "format_type": "csv",
+  "version": "1.0",
+  "description": "ThinkLP Lowes Item Master - pipe-delimited CSV config (generated from sample file)",
+  "normalization": {
+    "trim_strings": true,
+    "cast_mode": "safe"
+  },
+  "csv_delimiter": "|",
+  "csv_quotechar": "\"",
+  "csv_escapechar": "\\",
+  "csv_has_header": true,
+  "csv_skip_rows": 0,
+  "computed_fields": [],
+  "records": [
+    {
+      "name": "ItemMaster",
+      "context": [
+        {
+          "name": "FileSource",
+          "value": "ThinkLP_Lowes_ItemMaster_20260116.csv"
+        }
+      ],
+      "fields": [
+        { "name": "Product_ID", "path": "Product_ID", "type": "string", "nullable": false },
+        { "name": "UPC", "path": "UPC", "type": "string", "nullable": false },
+        { "name": "Product_SKU", "path": "Product_SKU", "type": "string", "nullable": false },
+        { "name": "Item_Description", "path": "Item_Description", "type": "string", "nullable": false },
+        { "name": "Merchandising_Division", "path": "Merchandising_Division", "type": "string", "nullable": false },
+        { "name": "Merchandising_Division_Number", "path": "Merchandising_Division_Number", "type": "int", "nullable": false },
+        { "name": "Merchandising_Sub_division", "path": "Merchandising_Sub_division", "type": "string", "nullable": false },
+        { "name": "Merchandising_Sub_division_Number", "path": "Merchandising_Sub_division_Number", "type": "int", "nullable": false },
+        { "name": "Product_Group", "path": "Product_Group", "type": "string", "nullable": false },
+        { "name": "Product_Group_Number", "path": "Product_Group_Number", "type": "int", "nullable": false },
+        { "name": "Assortment", "path": "Assortment", "type": "string", "nullable": false },
+        { "name": "Assortment_Number", "path": "Assortment_Number", "type": "int", "nullable": false },
+        { "name": "Vendor_Name", "path": "Vendor_Name", "type": "string", "nullable": true },
+        { "name": "Model_Number", "path": "Model_Number", "type": "string", "nullable": false },
+        { "name": "Brand", "path": "Brand", "type": "string", "nullable": true },
+        { "name": "Color", "path": "Color", "type": "string", "nullable": true },
+        { "name": "Size", "path": "Size", "type": "string", "nullable": true },
+        { "name": "Product_Cost", "path": "Product_Cost", "type": "decimal", "nullable": true },
+        { "name": "Retail_Price", "path": "Retail_Price", "type": "decimal", "nullable": true },
+        { "name": "Product_Photo_URL", "path": "Product_Photo_URL", "type": "string", "nullable": true },
+        { "name": "Item_Length", "path": "Item_Length", "type": "decimal", "nullable": true },
+        { "name": "Item_Width", "path": "Item_Width", "type": "decimal", "nullable": true },
+        { "name": "Item_Height", "path": "Item_Height", "type": "decimal", "nullable": true },
+        { "name": "Item_Weight", "path": "Item_Weight", "type": "decimal", "nullable": true },
+        { "name": "Carton_Length", "path": "Carton_Length", "type": "decimal", "nullable": true },
+        { "name": "Carton_Width", "path": "Carton_Width", "type": "decimal", "nullable": true },
+        { "name": "Carton_Height", "path": "Carton_Height", "type": "decimal", "nullable": true },
+        { "name": "Carton_Weight", "path": "Carton_Weight", "type": "decimal", "nullable": true },
+        { "name": "Finish", "path": "Finish", "type": "string", "nullable": true },
+        { "name": "Recall_Indicator", "path": "Recall_Indicator", "type": "string", "nullable": false },
+        { "name": "Hazmat_Indicator", "path": "Hazmat_Indicator", "type": "string", "nullable": true },
+        { "name": "Vendor_Number", "path": "Vendor_Number", "type": "int", "nullable": false },
+        { "name": "Product_URL", "path": "Product_URL", "type": "string", "nullable": true },
+        { "name": "Item_Type_Code", "path": "Item_Type_Code", "type": "int", "nullable": false }
+      ]
+    }
+  ]
+}

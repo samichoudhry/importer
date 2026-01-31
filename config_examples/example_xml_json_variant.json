@@ -1,0 +1,122 @@
+{
+  "format_type": "xml",
+  "description": "Example configuration demonstrating JSON variant field type for complex/nested structures",
+  "namespaces": {
+    "nax": "http://www.naxml.org/POSBO/Vocabulary/2003-10-16"
+  },
+  "records": [
+    {
+      "name": "SaleEvents",
+      "select": "/nax:NAXML-POSJournal/nax:JournalReport/nax:SaleEvent",
+      "fields": [
+        {
+          "name": "EventSequenceID",
+          "path": "nax:EventSequenceID",
+          "type": "string",
+          "nullable": false,
+          "description": "Unique event identifier"
+        },
+        {
+          "name": "TransactionID",
+          "path": "nax:TransactionID",
+          "type": "string",
+          "nullable": true,
+          "description": "Transaction identifier"
+        },
+        {
+          "name": "BusinessDate",
+          "path": "nax:BusinessDate",
+          "type": "date",
+          "nullable": true,
+          "description": "Business date of transaction"
+        },
+        {
+          "name": "TotalAmount",
+          "path": "nax:TransactionSummary/nax:TransactionTotalGrandAmount",
+          "type": "decimal",
+          "nullable": true,
+          "description": "Total transaction amount"
+        },
+        {
+          "name": "TransactionLines_json",
+          "path": "nax:TransactionDetailGroup/nax:TransactionLine",
+          "type": "json",
+          "nullable": true,
+          "description": "All transaction line items as JSON array - includes ItemLine, TenderInfo, TransactionTax"
+        }
+      ]
+    },
+    {
+      "name": "DetailedLines",
+      "select": "/nax:NAXML-POSJournal/nax:JournalReport/nax:SaleEvent",
+      "context": [
+        {
+          "name": "EventID",
+          "from": "nax:EventSequenceID"
+        }
+      ],
+      "fields": [
+        {
+          "name": "EventSequenceID",
+          "path": "nax:EventSequenceID",
+          "type": "string",
+          "description": "Event identifier (for joining)"
+        },
+        {
+          "name": "LineNumber",
+          "path": "nax:TransactionDetailGroup/nax:TransactionLine/nax:ItemLine/nax:ItemCode/nax:InventoryItemID",
+          "type": "string",
+          "description": "Item identifier (flattened)"
+        },
+        {
+          "name": "Description",
+          "path": "nax:TransactionDetailGroup/nax:TransactionLine/nax:ItemLine/nax:Description",
+          "type": "string",
+          "description": "Item description (flattened)"
+        },
+        {
+          "name": "Price",
+          "path": "nax:TransactionDetailGroup/nax:TransactionLine/nax:ItemLine/nax:ActualSalesPrice",
+          "type": "decimal",
+          "description": "Item price (flattened)"
+        },
+        {
+          "name": "ItemLine_json",
+          "path": "nax:TransactionDetailGroup/nax:TransactionLine/nax:ItemLine",
+          "type": "json",
+          "nullable": true,
+          "description": "Full ItemLine structure as JSON - preserves all nested details"
+        }
+      ],
+      "comments": "This approach gives you BOTH: commonly-queried fields (flat) AND full structure (JSON)"
+    }
+  ],
+  "output": {
+    "flush_every": 1000,
+    "include_rejected": true,
+    "csv_encoding": "utf-8"
+  },
+  "continueOnError": true,
+  "notes": [
+    "JSON field type benefits:",
+    "  1. Reduces column proliferation (no need for 50+ nullable columns)",
+    "  2. Preserves full data structure for ad-hoc analysis",
+    "  3. Compatible with modern data warehouses (Snowflake, BigQuery, PostgreSQL)",
+    "  4. Handles varying line types (ItemLine, TenderInfo, Tax) in one field",
+    "",
+    "Best practices:",
+    "  - Use JSON for complex/nested structures with many optional fields",
+    "  - Keep commonly-queried fields as regular columns (for performance)",
+    "  - Hybrid approach: extract key fields + store full JSON",
+    "  - Monitor JSON field sizes (warnings if >50KB)",
+    "",
+    "Database compatibility:",
+    "  - Snowflake: Load into VARIANT column",
+    "  - PostgreSQL: Load into JSONB column",
+    "  - BigQuery: Load into JSON column",
+    "  - Query examples:",
+    "    Snowflake: SELECT TransactionLines_json:ItemLine.Description FROM sales",
+    "    PostgreSQL: SELECT TransactionLines_json::jsonb->0->'ItemLine'->'Description' FROM sales",
+    "    BigQuery: SELECT JSON_EXTRACT(TransactionLines_json, '$[0].ItemLine.Description') FROM sales"
+  ]
+}

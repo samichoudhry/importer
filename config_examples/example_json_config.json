@@ -1,0 +1,170 @@
+{
+  "format_type": "json",
+  "version": "1.0", /*optional*/
+  "description": "Comprehensive JSON parser configuration - demonstrates JSONPath expressions and all parameters", /*optional*/
+  
+  "continueOnError": false, /*optional*/
+  "ignoreBrokenFiles": false, /*optional*/
+  "max_file_size": null, /*optional*/
+  "max_files": null, /*optional - limits number of files processed*/
+  "file_mask": null, /*optional - regex pattern to filter filenames, e.g., "01-10-2025" or ".*\\.json$"*/
+  "progress_interval": 10000, /*optional*/
+  
+  "normalization": { /*optional*/
+    "cast_mode": "safe", /*optional*/
+    "strip_whitespace": true, /*optional*/
+    "empty_string_as_null": true /*optional*/
+  },
+  
+  "output": { /*optional*/
+    "flush_every": 1000, /*optional*/
+    "include_rejected": true, /*optional*/
+    "csv_encoding": "utf-8" /*optional*/
+  },
+  
+  "json_encoding": "utf-8", /*optional*/
+  
+  "computed_fields": [ /*optional*/
+    {
+      "name": "UserFullName",
+      "type": "string", /*optional*/
+      "formula": "{FirstName} {LastName}"
+    },
+    {
+      "name": "UserHash",
+      "type": "string", /*optional*/
+      "formula": "hash_md5({Email}-{UserId})"
+    }
+  ],
+  
+  "records": [
+    {
+      "name": "Users",
+      "select": "$.users",
+      "context": [ /*optional*/
+        {
+          "name": "FileSource",
+          "value": "users.json" /*optional - but must have value OR from*/
+        },
+        {
+          "name": "DataVersion",
+          "from": "$.metadata.version" /*optional - but must have value OR from*/
+        }
+      ],
+      "fields": [
+        {
+          "name": "UserId",
+          "path": "id",
+          "type": "int", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "Email",
+          "path": "email",
+          "type": "string", /*optional*/
+          "nullable": false, /*optional*/
+          "regex": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" /*optional*/
+        },
+        {
+          "name": "FirstName",
+          "path": "name.first",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "LastName",
+          "path": "name.last",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "Age",
+          "path": "age",
+          "type": "int", /*optional*/
+          "nullable": true, /*optional*/
+          "min_value": 0, /*optional*/
+          "max_value": 150 /*optional*/
+        },
+        {
+          "name": "Active",
+          "path": "active",
+          "type": "boolean", /*optional*/
+          "nullable": true, /*optional*/
+          "default": true /*optional*/
+        },
+        {
+          "name": "Address",
+          "path": "address",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "UserFullName",
+          "type": "computed",
+          "computed_field": "UserFullName"
+        },
+        {
+          "name": "UserHash",
+          "type": "computed",
+          "computed_field": "UserHash"
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "select": "$.orders",
+      "context": [ /*optional*/
+        {
+          "name": "FileSource",
+          "value": "orders.json" /*optional - but must have value OR from*/
+        }
+      ],
+      "fields": [
+        {
+          "name": "OrderId",
+          "path": "orderId",
+          "type": "string", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "UserId",
+          "path": "userId",
+          "type": "int", /*optional*/
+          "nullable": false /*optional*/
+        },
+        {
+          "name": "Total",
+          "path": "total",
+          "type": "decimal", /*optional*/
+          "nullable": false, /*optional*/
+          "min_value": 0.0 /*optional*/
+        },
+        {
+          "name": "Status",
+          "path": "status",
+          "type": "string", /*optional*/
+          "nullable": false, /*optional*/
+          "regex": "^(pending|processing|completed|cancelled)$" /*optional*/
+        },
+        {
+          "name": "OrderDate",
+          "path": "date",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "FirstItem",
+          "path": "items[0].name",
+          "type": "string", /*optional*/
+          "nullable": true /*optional*/
+        },
+        {
+          "name": "FirstItemPrice",
+          "path": "items[0].price",
+          "type": "decimal", /*optional*/
+          "nullable": true /*optional*/
+        }
+      ]
+    }
+  ]
+}

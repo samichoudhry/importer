@@ -1,0 +1,19 @@
+{
+  "format_type": "xml",
+  "description": "Simple example config for JSON variant field - use with input/example_json_variant.xml",
+  "namespaces": {
+    "nax": "http://www.naxml.org/POSBO/Vocabulary/2003-10-16"
+  },
+  "records": [
+    {
+      "name": "SaleEvents",
+      "select": "//nax:SaleEvent",
+      "fields": [
+        {"name": "EventID", "path": "nax:EventSequenceID", "type": "string"},
+        {"name": "TransactionID", "path": "nax:TransactionID", "type": "string"},
+        {"name": "TotalAmount", "path": "nax:TransactionSummary/nax:TransactionTotalGrandAmount", "type": "decimal"},
+        {"name": "TransactionLines_json", "path": "nax:TransactionDetailGroup/nax:TransactionLine", "type": "json"}
+      ]
+    }
+  ]
+}
