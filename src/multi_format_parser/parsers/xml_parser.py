@@ -138,10 +138,10 @@ def parse_xml(
 
         for record in config["records"]:
             select_expr = normalize_xpath(record["select"])
-            
+
             # Convert namespaces dict to tuple for caching
             ns_tuple = tuple(sorted(ns.items())) if ns else ()
-            
+
             # Use cached compiled XPath for better performance
             try:
                 compiled_select = compile_xpath(select_expr, ns_tuple)
@@ -150,7 +150,7 @@ def parse_xml(
                 # Fallback to direct xpath if compilation fails
                 logger.warning(f"Failed to compile XPath '{select_expr}', using fallback")
                 nodes = root.xpath(select_expr, namespaces=ns)
-                
+
             if not isinstance(nodes, list):
                 nodes = [nodes] if nodes else []
 
@@ -172,7 +172,7 @@ def parse_xml(
                         elif ctx.get("from") or ctx.get("from_expr"):
                             expr_raw = ctx.get("from") or ctx.get("from_expr")
                             expr = normalize_xpath(expr_raw)
-                            
+
                             # Use cached compiled XPath
                             try:
                                 compiled_expr = compile_xpath(expr, ns_tuple)
@@ -186,7 +186,7 @@ def parse_xml(
                                     val = root.xpath(expr, namespaces=ns)
                                 else:
                                     val = node.xpath(expr, namespaces=ns)
-                                    
+
                             val = val[0] if isinstance(val, list) and val else val
                             row[ctx["name"]] = cast_value(val, "string", parser_obj.safe_mode)
                         else:
@@ -204,7 +204,7 @@ def parse_xml(
                             continue
 
                         expr = normalize_xpath(fld["path"])
-                        
+
                         # Use cached compiled XPath
                         try:
                             compiled_expr = compile_xpath(expr, ns_tuple)
@@ -212,9 +212,9 @@ def parse_xml(
                         except etree.XPathSyntaxError:
                             # Fallback for dynamic/invalid expressions
                             val = node.xpath(expr, namespaces=ns)
-                        
+
                         field_type = fld.get("type", "string").lower()
-                        
+
                         # Handle JSON field type (variant/complex fields)
                         if field_type == "json":
                             try:

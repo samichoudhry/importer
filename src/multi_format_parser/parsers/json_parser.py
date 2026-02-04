@@ -43,27 +43,27 @@ def validate_json_schema(data: dict, schema: dict) -> Tuple[bool, Optional[str]]
             "jsonschema library is required for JSON schema validation. "
             "Install with: pip install jsonschema"
         )
-    
+
     try:
         # Use Draft7Validator for better error messages
         validator = Draft7Validator(schema)
         errors = list(validator.iter_errors(data))
-        
+
         if errors:
             # Format validation errors
             error_messages = []
             for error in errors[:5]:  # Limit to first 5 errors
                 path = ".".join(str(p) for p in error.path) if error.path else "root"
                 error_messages.append(f"{path}: {error.message}")
-            
+
             error_summary = "; ".join(error_messages)
             if len(errors) > 5:
                 error_summary += f" (and {len(errors) - 5} more errors)"
-                
+
             return False, error_summary
-        
+
         return True, None
-        
+
     except jsonschema.SchemaError as e:
         return False, f"Invalid JSON schema: {e.message}"
     except Exception as e:
@@ -87,12 +87,12 @@ def parse_json(json_path: Path, config: dict, writer: Optional[CSVWriter], stats
         Tuple[bool, Optional[str]]: (success, error_message)
     """
     parser_obj = BaseParser(json_path, config, writer, stats, record_stats)
-    
+
     try:
         encoding = config.get("json_encoding", "utf-8")
 
         try:
-            with open(json_path, 'r', encoding=encoding) as f:
+            with open(json_path, encoding=encoding) as f:
                 try:
                     root_data = json.load(f)
                 except json.JSONDecodeError as e:
@@ -112,20 +112,20 @@ def parse_json(json_path: Path, config: dict, writer: Optional[CSVWriter], stats
                 # Resolve relative to config file location
                 config_dir = json_path.parent
                 schema_path = config_dir / schema_path
-            
+
             try:
-                with open(schema_path, 'r', encoding='utf-8') as f:
+                with open(schema_path, encoding='utf-8') as f:
                     json_schema = json.load(f)
             except Exception as e:
                 logger.warning(f"Failed to load JSON schema from {schema_path}: {e}")
-        
+
         if json_schema:
-            logger.info(f"Validating JSON against schema")
+            logger.info("Validating JSON against schema")
             is_valid, error_msg = validate_json_schema(root_data, json_schema)
-            
+
             if not is_valid:
                 raise ValueError(f"JSON schema validation failed: {error_msg}")
-            
+
             logger.info("JSON schema validation passed")
 
 
@@ -160,10 +160,10 @@ def parse_json(json_path: Path, config: dict, writer: Optional[CSVWriter], stats
             record_idx = 0
             for record_data in records:
                 record_idx += 1
-                
+
                 # Log progress periodically
                 parser_obj.log_progress(record["name"], record_idx, record_idx)
-                
+
                 if record_data is None:
                     continue
 
@@ -232,7 +232,7 @@ def parse_json(json_path: Path, config: dict, writer: Optional[CSVWriter], stats
                     record_name = record["name"]
                     record_stats[record_name].total_rows += 1
                     parser_obj.validate_and_write_row(record_name, row, columns, field_defs, record_idx)
-                
+
                 except Exception as row_error:
                     # Handle row-level errors if continueOnError is enabled
                     if parser_obj.continue_on_error:
@@ -248,6 +248,6 @@ def parse_json(json_path: Path, config: dict, writer: Optional[CSVWriter], stats
 
         parser_obj.finalize_stats()
         return (True, None)
-    
+
     except (FileNotFoundError, PermissionError, UnicodeDecodeError, Exception) as e:
         return parser_obj.handle_file_error(e)

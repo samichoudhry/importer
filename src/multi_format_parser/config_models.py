@@ -62,12 +62,12 @@ class FieldConfig(BaseModel):
     type: FieldType = Field(FieldType.STRING, description="Field data type")
     nullable: bool = Field(True, description="Whether field can be null")
     computed_field: Optional[str] = Field(None, description="Reference to computed field formula")
-    
+
     # Fixed-width specific
     start: Optional[int] = Field(None, description="Start position for fixed-width (0-indexed)", ge=0)
     end: Optional[int] = Field(None, description="End position for fixed-width (0-indexed)", ge=0)
     width: Optional[int] = Field(None, description="Field width for fixed-width", gt=0)
-    
+
     # Validation constraints
     regex: Optional[str] = Field(None, description="Regex pattern for validation")
     min_value: Optional[float] = Field(None, description="Minimum numeric value")
@@ -149,7 +149,7 @@ class ParserConfig(BaseModel):
     """Main parser configuration."""
     format_type: FormatType = Field(..., description="Input file format type")
     records: List[RecordConfig] = Field(..., min_length=1, description="Record definitions")
-    
+
     # Common options
     continueOnError: bool = Field(
         False,
@@ -178,31 +178,31 @@ class ParserConfig(BaseModel):
         description="Log progress every N rows",
         gt=0
     )
-    
+
     # Namespaces (XML/JSON)
     namespaces: Dict[str, str] = Field(
         default_factory=dict,
         description="XML namespace prefix mappings or JSON path prefixes"
     )
-    
+
     # Computed fields
     computed_fields: List[ComputedFieldConfig] = Field(
         default_factory=list,
         description="Computed field formulas"
     )
-    
+
     # Normalization settings
     normalization: NormalizationConfig = Field(
         default_factory=NormalizationConfig,
         description="Data normalization rules"
     )
-    
+
     # Output settings
     output: OutputConfig = Field(
         default_factory=OutputConfig,
         description="Output file configuration"
     )
-    
+
     # CSV-specific options
     csv_delimiter: str = Field(",", description="CSV delimiter character")
     csv_quotechar: str = Field('"', description="CSV quote character")
@@ -211,13 +211,13 @@ class ParserConfig(BaseModel):
     csv_has_header: bool = Field(True, description="CSV has header row")
     csv_skip_rows: int = Field(0, description="Number of rows to skip at start", ge=0)
     csv_encoding: str = Field("utf-8", description="Input CSV encoding")
-    
+
     # Fixed-width specific options
     fixed_width_encoding: str = Field("utf-8", description="Fixed-width file encoding")
-    
+
     # JSON-specific options
     json_encoding: str = Field("utf-8", description="JSON file encoding")
-    
+
     # Legacy parser sub-config support (for backward compatibility)
     parser: Optional[Dict[str, Any]] = Field(
         None,
@@ -255,7 +255,7 @@ class ParserConfig(BaseModel):
                         f"Record '{record.name}': {self.format_type.value.upper()} records "
                         f"must have a non-empty 'select' field"
                     )
-        
+
         if self.format_type == FormatType.FIXED_WIDTH:
             # Fixed-width requires position/width info
             for record in self.records:
@@ -266,7 +266,7 @@ class ParserConfig(BaseModel):
                                 f"Record '{record.name}', Field '{field.name}': "
                                 f"Fixed-width fields must have start position and either end or width"
                             )
-        
+
         return self
 
     def to_legacy_dict(self) -> dict:
@@ -309,14 +309,14 @@ class ParserConfig(BaseModel):
         """
         import json
         from pathlib import Path
-        
+
         path = Path(config_path)
         if not path.exists():
             raise FileNotFoundError(f"Config file not found: {config_path}")
-        
-        with open(path, 'r', encoding='utf-8') as f:
+
+        with open(path, encoding='utf-8') as f:
             config_dict = json.load(f)
-        
+
         return cls.from_dict(config_dict)
 
 

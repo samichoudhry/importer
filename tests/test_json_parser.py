@@ -2,10 +2,11 @@
 
 import csv
 import json
-from multi_format_parser.orchestrator import parse_files
 from pathlib import Path
 
 import pytest
+
+from multi_format_parser.orchestrator import parse_files
 
 
 def test_json_parser_basic(sample_json_file, sample_json_config, temp_output_dir):
@@ -35,7 +36,7 @@ def test_json_parser_basic(sample_json_file, sample_json_config, temp_output_dir
     assert output_file.exists()
 
     # Verify output content
-    with open(output_file, 'r') as f:
+    with open(output_file) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         assert len(rows) == 3
@@ -103,7 +104,7 @@ def test_json_parser_nested_paths(tmp_path, temp_output_dir):
 
     # Verify nested field extraction
     output_file = temp_output_dir / "Users.csv"
-    with open(output_file, 'r') as f:
+    with open(output_file) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         assert rows[0]["Name"] == "Alice"

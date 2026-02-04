@@ -5,10 +5,11 @@ must continue processing files even when one file fails.
 """
 
 import json
-from multi_format_parser.orchestrator import parse_files
 from pathlib import Path
 
 import pytest
+
+from multi_format_parser.orchestrator import parse_files
 
 
 def test_continue_on_file_error_basic(tmp_path, temp_output_dir):

@@ -1,0 +1,16 @@
+{
+  "format_type": "csv",
+  "description": "Example config demonstrating file_mask parameter for filtering files",
+  "csv_delimiter": ",",
+  "csv_has_header": true,
+  
+  "file_mask": ".*\\.csv$",
+  
+  "records": [{
+    "name": "FilteredData",
+    "fields": [
+      {"name": "ID", "path": "ID", "type": "string"},
+      {"name": "Value", "path": "Value", "type": "string"}
+    ]
+  }]
+}

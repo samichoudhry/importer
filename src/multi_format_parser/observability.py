@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class MetricEvent:
     value: float
     timestamp: float = field(default_factory=time.time)
     tags: Dict[str, str] = field(default_factory=dict)
-    
+
     def __str__(self) -> str:
         tags_str = ",".join(f"{k}={v}" for k, v in self.tags.items())
         return f"{self.name}:{self.value}|{self.metric_type.value}|{tags_str}"
@@ -58,7 +58,7 @@ class Event:
     file_path: Optional[Path] = None
     record_name: Optional[str] = None
     details: Dict[str, Any] = field(default_factory=dict)
-    
+
     def __str__(self) -> str:
         parts = [self.event_type.value]
         if self.file_path:
@@ -73,15 +73,15 @@ class Event:
 
 class ObservabilityHook:
     """Base class for observability hooks."""
-    
+
     def on_metric(self, metric: MetricEvent) -> None:
         """Called when a metric is emitted."""
         pass
-    
+
     def on_event(self, event: Event) -> None:
         """Called when an event occurs."""
         pass
-    
+
     def on_error(self, error: Exception, context: Dict[str, Any]) -> None:
         """Called when an error occurs."""
         pass
@@ -89,20 +89,20 @@ class ObservabilityHook:
 
 class LoggingHook(ObservabilityHook):
     """Hook that logs metrics and events to Python logging."""
-    
+
     def __init__(self, log_metrics: bool = True, log_events: bool = True):
         self.log_metrics = log_metrics
         self.log_events = log_events
-    
+
     def on_metric(self, metric: MetricEvent) -> None:
         if self.log_metrics:
             logger.debug(f"METRIC: {metric}")
-    
+
     def on_event(self, event: Event) -> None:
         if self.log_events:
             level = logging.WARNING if event.event_type in (EventType.FILE_ERROR, EventType.ROW_ERROR) else logging.INFO
             logger.log(level, f"EVENT: {event}")
-    
+
     def on_error(self, error: Exception, context: Dict[str, Any]) -> None:
         logger.error(f"ERROR: {error} | Context: {context}")
 
@@ -113,7 +113,7 @@ class PrometheusHook(ObservabilityHook):
     Requires prometheus_client library:
         pip install prometheus-client
     """
-    
+
     def __init__(self):
         try:
             from prometheus_client import Counter, Gauge, Histogram
@@ -126,14 +126,14 @@ class PrometheusHook(ObservabilityHook):
                 "prometheus_client is required for PrometheusHook. "
                 "Install with: pip install prometheus-client"
             )
-    
+
     def _get_or_create_metric(self, metric: MetricEvent):
         """Get or create a Prometheus metric."""
         key = f"{metric.name}_{metric.metric_type.value}"
-        
+
         if key not in self._metrics:
             labels = list(metric.tags.keys())
-            
+
             if metric.metric_type == MetricType.COUNTER:
                 self._metrics[key] = self.Counter(
                     metric.name, f"Parser {metric.name}", labels
@@ -146,15 +146,15 @@ class PrometheusHook(ObservabilityHook):
                 self._metrics[key] = self.Histogram(
                     metric.name, f"Parser {metric.name}", labels
                 )
-        
+
         return self._metrics[key]
-    
+
     def on_metric(self, metric: MetricEvent) -> None:
         prom_metric = self._get_or_create_metric(metric)
-        
+
         if metric.tags:
             prom_metric = prom_metric.labels(**metric.tags)
-        
+
         if metric.metric_type == MetricType.COUNTER:
             prom_metric.inc(metric.value)
         elif metric.metric_type == MetricType.GAUGE:
@@ -169,7 +169,7 @@ class StatsDHook(ObservabilityHook):
     Requires statsd library:
         pip install statsd
     """
-    
+
     def __init__(self, host: str = "localhost", port: int = 8125, prefix: str = "parser"):
         try:
             import statsd
@@ -179,14 +179,14 @@ class StatsDHook(ObservabilityHook):
                 "statsd is required for StatsDHook. "
                 "Install with: pip install statsd"
             )
-    
+
     def on_metric(self, metric: MetricEvent) -> None:
         # Format metric name with tags
         name = metric.name
         if metric.tags:
             tags_str = ".".join(f"{k}.{v}" for k, v in metric.tags.items())
             name = f"{name}.{tags_str}"
-        
+
         if metric.metric_type == MetricType.COUNTER:
             self.client.incr(name, int(metric.value))
         elif metric.metric_type == MetricType.GAUGE:
@@ -197,15 +197,15 @@ class StatsDHook(ObservabilityHook):
 
 class ObservabilityManager:
     """Manages observability hooks and emits metrics/events."""
-    
+
     def __init__(self):
         self.hooks: List[ObservabilityHook] = []
         self._timers: Dict[str, float] = {}
-    
+
     def register_hook(self, hook: ObservabilityHook) -> None:
         """Register an observability hook."""
         self.hooks.append(hook)
-    
+
     def emit_metric(
         self,
         metric_type: MetricType,
@@ -220,13 +220,13 @@ class ObservabilityManager:
             value=value,
             tags=tags or {}
         )
-        
+
         for hook in self.hooks:
             try:
                 hook.on_metric(metric)
             except Exception as e:
                 logger.error(f"Error in observability hook: {e}")
-    
+
     def emit_event(
         self,
         event_type: EventType,
@@ -241,13 +241,13 @@ class ObservabilityManager:
             record_name=record_name,
             details=details or {}
         )
-        
+
         for hook in self.hooks:
             try:
                 hook.on_event(event)
             except Exception as e:
                 logger.error(f"Error in observability hook: {e}")
-    
+
     def emit_error(self, error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
         """Emit an error to all registered hooks."""
         for hook in self.hooks:
@@ -255,39 +255,39 @@ class ObservabilityManager:
                 hook.on_error(error, context or {})
             except Exception as e:
                 logger.error(f"Error in observability hook: {e}")
-    
+
     def start_timer(self, name: str) -> None:
         """Start a named timer."""
         self._timers[name] = time.time()
-    
+
     def end_timer(self, name: str, tags: Optional[Dict[str, str]] = None) -> float:
         """End a named timer and emit the duration."""
         if name not in self._timers:
             logger.warning(f"Timer '{name}' was not started")
             return 0.0
-        
+
         duration = time.time() - self._timers[name]
         del self._timers[name]
-        
+
         self.emit_metric(
             metric_type=MetricType.TIMER,
             name=name,
             value=duration * 1000,  # Convert to milliseconds
             tags=tags
         )
-        
+
         return duration
-    
+
     # Convenience methods
-    
+
     def counter(self, name: str, value: float = 1.0, tags: Optional[Dict[str, str]] = None) -> None:
         """Emit a counter metric."""
         self.emit_metric(MetricType.COUNTER, name, value, tags)
-    
+
     def gauge(self, name: str, value: float, tags: Optional[Dict[str, str]] = None) -> None:
         """Emit a gauge metric."""
         self.emit_metric(MetricType.GAUGE, name, value, tags)
-    
+
     def histogram(self, name: str, value: float, tags: Optional[Dict[str, str]] = None) -> None:
         """Emit a histogram metric."""
         self.emit_metric(MetricType.HISTOGRAM, name, value, tags)

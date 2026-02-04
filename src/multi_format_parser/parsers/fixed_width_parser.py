@@ -22,7 +22,7 @@ def parse_fixed_width(file_path: Path, config: dict, writer: Optional[CSVWriter]
         Tuple[bool, Optional[str]]: (success, error_message)
     """
     parser_obj = BaseParser(file_path, config, writer, stats, record_stats)
-    
+
     try:
         encoding = config.get("fixed_width_encoding", "utf-8")
         skip_rows = config.get("fixed_width_skip_rows", 0)
@@ -72,14 +72,14 @@ def parse_fixed_width(file_path: Path, config: dict, writer: Optional[CSVWriter]
                 "record_type_value": record_type_value
             })
 
-        with open(file_path, 'r', encoding=encoding) as f:
+        with open(file_path, encoding=encoding) as f:
             for _ in range(skip_rows):
                 next(f, None)
 
             for line_num, line in enumerate(f, start=1):
                 # Log progress periodically
                 parser_obj.log_progress("Fixed-Width", line_num, line_num)
-                
+
                 line = line.rstrip('\n\r')
                 if not line.strip():
                     continue
@@ -204,12 +204,12 @@ def parse_fixed_width(file_path: Path, config: dict, writer: Optional[CSVWriter]
                         record_name = record["name"]
                         record_stats[record_name].total_rows += 1
                         parser_obj.validate_and_write_row(record_name, row, columns, field_defs, line_num)
-                    
+
                     except Exception as row_error:
                         parser_obj.handle_row_error(record["name"], row_error, line_num)
                         break  # Skip to next line
         parser_obj.finalize_stats()
         return (True, None)
-    
+
     except (FileNotFoundError, PermissionError, UnicodeDecodeError, Exception) as e:
         return parser_obj.handle_file_error(e)

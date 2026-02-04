@@ -1,10 +1,11 @@
 """Tests for CSV parser functionality."""
 
 import csv
-from multi_format_parser.orchestrator import parse_files
 from pathlib import Path
 
 import pytest
+
+from multi_format_parser.orchestrator import parse_files
 
 
 def test_csv_parser_basic(sample_csv_file, sample_csv_config, temp_output_dir):
@@ -34,7 +35,7 @@ def test_csv_parser_basic(sample_csv_file, sample_csv_config, temp_output_dir):
     assert output_file.exists()
 
     # Verify output content
-    with open(output_file, 'r') as f:
+    with open(output_file) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         assert len(rows) == 3

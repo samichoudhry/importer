@@ -1,0 +1,5 @@
+# Output Directory
+
+This directory is used for generated output files from the parser.
+
+Output files are automatically excluded from version control (see `.gitignore`).

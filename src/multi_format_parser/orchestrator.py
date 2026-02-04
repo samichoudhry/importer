@@ -8,6 +8,8 @@ independent of CLI concerns.
 import json
 import logging
 import re
+import shutil
+import tempfile
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -16,6 +18,7 @@ from multi_format_parser.csv_writer import CSVWriter
 from multi_format_parser.models import ParsingStats
 from multi_format_parser.parsers import parse_csv, parse_fixed_width, parse_json, parse_xml
 from multi_format_parser.validators import validate_config
+from multi_format_parser.zip_utils import extract_compressed_file, is_compressed_file
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,7 @@ def parse_files(
 
     Args:
         config_path: Path to configuration JSON file
-        input_files: List of input files to process
+        input_files: List of input files to process (supports .zip archives)
         output_dir: Output directory for results
         dry_run: If True, parse and validate but don't write outputs
         fail_fast: If True, stop on first file error (default: continue)
@@ -46,12 +49,13 @@ def parse_files(
     """
     start_time = time.time()
     file_errors: Dict[str, str] = {}
+    temp_dirs: List[Path] = []  # Track temp directories for cleanup
 
     if not config_path.exists():
         raise FileNotFoundError(f"Config not found: {config_path}")
 
     logger.info(f"Loading configuration from {config_path}")
-    with open(config_path, 'r', encoding='utf-8') as f:
+    with open(config_path, encoding='utf-8') as f:
         config = json.load(f)
 
     # Validate configuration
@@ -66,7 +70,58 @@ def parse_files(
     format_type = config.get("format_type", "").lower()
     if not format_type:
         raise ValueError("Config must specify 'format_type'")
+
+    # Extract zip files first before applying filters
+    expanded_files: List[Path] = []
+    for input_file in input_files:
+        # Only process files that exist - but keep non-existent files in the list
+        # so they can be handled properly in the main processing loop
+        if not input_file.exists():
+            # Keep the file in the list so it gets counted as "processed" but failed
+            expanded_files.append(input_file)
+            continue
+            
+        if is_compressed_file(input_file):
+            try:
+                # Create temp directory for extraction
+                temp_dir = Path(tempfile.mkdtemp(prefix="parser_compressed_"))
+                temp_dirs.append(temp_dir)
+                
+                # Extract compressed file contents
+                extracted_files = extract_compressed_file(input_file, temp_dir)
+                if extracted_files:
+                    expanded_files.extend(extracted_files)
+                    logger.info(f"📦 Extracted {len(extracted_files)} file(s) from {input_file.name}")
+                else:
+                    logger.warning(f"No files found in archive: {input_file.name}")
+            except Exception as e:
+                error_msg = f"Failed to extract compressed file: {e}"
+                logger.error(f"❌ {input_file.name}: {error_msg}")
+                file_errors[str(input_file)] = error_msg
+                if fail_fast:
+                    # Clean up temp dirs before raising
+                    for temp_dir in temp_dirs:
+                        try:
+                            shutil.rmtree(temp_dir)
+                        except Exception:
+                            pass
+                    raise FileProcessingError(error_msg) from e
+        else:
+            expanded_files.append(input_file)
     
+    input_files = expanded_files
+    
+    if not input_files:
+        error_msg = "No files to process"
+        logger.error(error_msg)
+        # Clean up temp dirs
+        for temp_dir in temp_dirs:
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
+        raise ValueError(error_msg)
+
     # Get max file size limit (in bytes, default: None = no limit)
     # Example: 1GB = 1073741824, 500MB = 524288000
     max_file_size = config.get("max_file_size")
@@ -163,7 +218,7 @@ def parse_files(
                     try:
                         resolved = input_file.resolve()
                         resolved_size = resolved.stat().st_size
-                        
+
                         # Check file size limit
                         if max_file_size is not None and resolved_size > max_file_size:
                             size_mb = resolved_size / (1024 * 1024)
@@ -175,7 +230,7 @@ def parse_files(
                             if fail_fast:
                                 raise FileProcessingError(error_msg)
                             continue
-                        
+
                         size_mb = resolved_size / (1024 * 1024)
                         logger.info(f"[{file_idx}/{len(input_files)}] Processing: {input_file.name} -> {resolved.name} ({size_mb:.2f} MB)")
                     except (OSError, RuntimeError):
@@ -194,7 +249,7 @@ def parse_files(
                         if fail_fast:
                             raise FileProcessingError(error_msg)
                         continue
-                    
+
                     size_mb = file_size / (1024 * 1024)
                     logger.info(f"[{file_idx}/{len(input_files)}] Processing: {input_file.name} ({size_mb:.2f} MB)")
             except (OSError, PermissionError, AttributeError) as e:
@@ -249,6 +304,14 @@ def parse_files(
                 writer_or_none.__exit__(None, None, None)
             except Exception as e:
                 logger.error(f"Error closing writer: {e}")
+        
+        # Clean up temporary directories from zip extraction
+        for temp_dir in temp_dirs:
+            try:
+                shutil.rmtree(temp_dir)
+                logger.debug(f"Cleaned up temp directory: {temp_dir}")
+            except Exception as e:
+                logger.warning(f"Failed to clean up temp directory {temp_dir}: {e}")
 
     # Update end times after processing completes
     for stat in record_stats.values():

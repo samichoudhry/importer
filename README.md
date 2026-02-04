@@ -33,6 +33,18 @@ poetry run python parser.py --config config/prod.json --out ./output --fail-fast
 
 # Dry run (validate without writing files)
 poetry run python parser.py --config config/test.json --out ./output --dry-run test.csv
+
+# Process zip archives (automatically extracts and parses contents)
+poetry run python parser.py --config config/example.json --out ./output archive.zip
+
+# Process gzip compressed files
+poetry run python parser.py --config config/example.json --out ./output data.csv.gz
+
+# Process tar.gz archives
+poetry run python parser.py --config config/example.json --out ./output archive.tar.gz
+
+# Mix compressed and regular files
+poetry run python parser.py --config config/example.json --out ./output file1.xml archive.zip data.csv.gz file2.csv
 ```
 
 ---
@@ -63,6 +75,7 @@ python parser.py --config prod_configs/fixed.json --out ./output input/prod_fixe
 ## Features
 
 - **Multi-Format Support**: Parse XML (with namespaces), CSV, JSON, and Fixed-Width files
+- **Compression Support**: Automatically extracts and processes files from zip, gzip (.gz), bzip2 (.bz2), tar, tar.gz (.tgz), and tar.bz2 archives
 - **Declarative Configuration**: JSON-based parsing rules, no code changes needed
 - **Production Resilient**: Continue-on-error default, comprehensive error tracking
 - **Data Validation**: Field-level validation with regex patterns, numeric ranges, nullable constraints
@@ -213,35 +226,75 @@ output/
 
 ### JSON Field Type (Variant Fields)
 
-The `json` field type allows capturing complex or repeating XML/JSON structures as a single JSON string in the output CSV. This is useful for:
-- Nested structures with many optional fields
-- Repeating elements that would require multiple rows or wide tables
-- Preserving full data structure for later analysis
+The `json` field type allows capturing complex or repeating XML/JSON structures as a single JSON string in the output CSV. This is ideal for avoiding column proliferation when dealing with complex nested data.
 
-**Example:**
+**Use Cases:**
+- Nested structures with many optional fields (reduces column explosion)
+- Repeating elements that would require multiple rows or wide tables
+- Preserving full data structure for later analysis in data warehouses
+- Handling variant structures (e.g., different transaction line types in one field)
+
+**Example Configuration:**
 ```json
 {
-  "name": "Transactions",
-  "select": "//Transaction",
-  "fields": [
-    {"name": "ID", "path": "ID", "type": "string"},
-    {"name": "TransactionLines", "path": "TransactionLine", "type": "json"}
-  ]
+  "format_type": "xml",
+  "namespaces": {"nax": "http://www.naxml.org/POSBO/Vocabulary/2003-10-16"},
+  "records": [{
+    "name": "SaleEvents",
+    "select": "//nax:SaleEvent",
+    "fields": [
+      {"name": "EventID", "path": "nax:EventSequenceID", "type": "string"},
+      {"name": "TotalAmount", "path": "nax:TransactionSummary/nax:TransactionTotalGrandAmount", "type": "decimal"},
+      {"name": "TransactionLines_json", "path": "nax:TransactionDetailGroup/nax:TransactionLine", "type": "json"}
+    ]
+  }]
 }
 ```
 
-**Output:**
+**Output CSV:**
 ```csv
-ID,TransactionLines
-T001,"[{""TransactionLine"":{""@status"":""normal"",""ItemLine"":{""ItemCode"":""12345"",""Price"":""9.99""}}}]"
+EventID,TotalAmount,TransactionLines_json
+51,11.13,"[{""nax:TransactionLine"":{""@status"":""normal"",""nax:ItemLine"":{""nax:ItemCode"":{""nax:POSCode"":""00072250030625""},""nax:Description"":""MRS. FRESHLEY MINI CHOC."",""nax:ActualSalesPrice"":""2.49""}}}]"
 ```
 
 **Features:**
-- Automatically converts XML elements to JSON
-- Handles single elements (returns object) or multiple elements (returns array)
-- Removes XML namespace attributes for cleaner output
-- Size warnings for large JSON fields (>50KB)
-- Compatible with modern databases (Snowflake VARIANT, PostgreSQL JSONB, BigQuery JSON)
+- Automatically converts XML elements to JSON format
+- Handles single elements (returns JSON object) or multiple elements (returns JSON array)
+- Removes XML namespace attributes (`@xmlns`) for cleaner output
+- Size warnings for large JSON fields (>50KB threshold)
+- Proper CSV escaping to prevent data corruption
+- UTF-8 support for Unicode and emoji
+- Production-ready error handling and logging
+
+**Database Compatibility:**
+
+The JSON output can be directly loaded into modern data warehouse JSON/VARIANT columns:
+
+| Database | Column Type | Query Example |
+|----------|-------------|---------------|
+| **Snowflake** | `VARIANT` | `SELECT lines[0]:ItemLine.Description::VARCHAR FROM sales;` |
+| **PostgreSQL** | `JSONB` | `SELECT lines->0->'ItemLine'->'Description' FROM sales;` |
+| **BigQuery** | `JSON` | `SELECT JSON_EXTRACT(lines, '$[0].ItemLine.Description') FROM sales;` |
+
+**Example Database Usage:**
+```sql
+-- Snowflake
+CREATE TABLE sales (
+    event_id VARCHAR,
+    total_amount DECIMAL(10,2),
+    lines VARIANT  -- Load JSON string here
+);
+
+-- Query nested data
+SELECT 
+    event_id,
+    total_amount,
+    lines[0]:ItemLine.Description::VARCHAR as first_item,
+    lines[0]:ItemLine.ActualSalesPrice::DECIMAL as first_price
+FROM sales;
+```
+
+See [example_xml_json_variant.json](config_examples/example_xml_json_variant.json) for a complete configuration example.
 
 ### Format-Specific Options
 
@@ -260,6 +313,145 @@ T001,"[{""TransactionLine"":{""@status"":""normal"",""ItemLine"":{""ItemCode"":"
 **Fixed-Width:**
 - `start`: Starting position (0-indexed)
 - `width` or `end`: Field width or ending position
+
+### File Filtering Options
+
+**`file_mask`** - Regex pattern to filter which files get processed
+
+Apply a regular expression pattern to filter files by name. This is useful when:
+- Processing directories with mixed file types
+- Extracting specific files from zip archives
+- Filtering files by naming convention
+
+**Example config:**
+```json
+{
+  "format_type": "csv",
+  "file_mask": ".*\\.csv$",
+  "records": [...]
+}
+```
+
+**Usage examples:**
+```bash
+# Only process CSV files from a directory
+python parser.py --config config.json --out ./output /data/*.* 
+
+# Extract and process only XML files from zip archive
+# Config: "file_mask": ".*\\.xml$"
+python parser.py --config config.json --out ./output archive.zip
+
+# Process files matching specific pattern
+# Config: "file_mask": "^invoice_.*\\.json$"
+python parser.py --config config.json --out ./output invoices/
+```
+
+**Important notes:**
+- Pattern is applied to **file names**, not full paths
+- For zip archives: pattern filters **extracted files**, not the zip file name itself
+- Uses Python regex syntax (escape special characters: `\\.` for literal dot)
+- If pattern matches no files, an error is raised
+
+**`max_files`** - Limit number of files to process (integer)
+
+Process only the first N files. Useful for:
+- Testing configurations on large datasets
+- Sampling data
+- Rate limiting
+
+**Example:** `"max_files": 10` processes first 10 files
+
+**`max_file_size`** - Maximum file size in bytes (integer)
+
+Skip files larger than the specified size. Useful for:
+- Avoiding memory issues
+- Filtering out unexpectedly large files
+- Production safety limits
+
+**Example:** `"max_file_size": 524288000` (500 MB limit)
+
+See [example_with_file_mask.json](config_examples/example_with_file_mask.json) for a complete example.
+
+---
+
+## Compression Support
+
+The parser automatically detects and extracts compressed/archived files before processing. This feature simplifies working with compressed data files.
+
+### Supported Formats
+
+| Format | Extensions | Type | Description |
+|--------|-----------|------|-------------|
+| **Zip** | `.zip` | Archive | Multiple files in one archive |
+| **Gzip** | `.gz` | Compression | Single file compression (e.g., `data.csv.gz`) |
+| **Bzip2** | `.bz2` | Compression | Single file compression (alternative to gzip) |
+| **Tar** | `.tar` | Archive | Multiple files, no compression |
+| **Tar+Gzip** | `.tar.gz`, `.tgz` | Archive+Compression | Multiple files with gzip compression |
+| **Tar+Bzip2** | `.tar.bz2` | Archive+Compression | Multiple files with bzip2 compression |
+
+### How It Works
+
+1. **Content-Based Detection**: Files are identified by reading their **magic bytes** (file signature), not by file extension
+   - **Zip**: `PK` signature (`50 4B`)
+   - **Gzip**: `1f 8b` magic bytes
+   - **Bzip2**: `BZh` signature
+   - **Tar**: POSIX tar format detection
+   - Works even if file has wrong extension (e.g., `data.xyz` that's actually gzip)
+   - Fake compressed files are correctly identified and treated as regular files
+2. **Extraction**: Contents are extracted to a temporary directory
+3. **Processing**: Each file in the archive is processed according to the configuration
+4. **Cleanup**: Temporary files are automatically removed after processing
+
+### Usage Examples
+
+**Process single compressed file:**
+```bash
+python parser.py --config config/csv.json --out ./output data.csv.gz
+```
+
+**Process archive with multiple files:**
+```bash
+python parser.py --config config/xml.json --out ./output archive.tar.gz
+```
+
+**Mix compressed and regular files:**
+```bash
+python parser.py --config config/csv.json --out ./output file1.csv data.zip file2.csv.gz file3.csv
+```
+
+**Process multiple archives:**
+```bash
+python parser.py --config config/json.json --out ./output *.tar.gz *.zip
+```
+
+**Extract and filter with file_mask:**
+```bash
+# Config: "file_mask": ".*\\.csv$"
+python parser.py --config config.json --out ./output archive.tar.gz
+# Only CSV files from the archive will be processed
+```
+
+### Features
+
+- **Multi-file archives**: Processes all compatible files within archives (zip, tar, tar.gz, tar.bz2)
+- **Single-file compression**: Automatically decompresses .gz and .bz2 files
+- **Nested directories**: Handles archives with nested folder structures
+- **Mixed processing**: Can process compressed and non-compressed files in the same batch
+- **Error handling**: Invalid or corrupted archives are logged and skipped (with `--fail-fast` disabled)
+- **Dry run support**: Works with `--dry-run` mode for validation
+
+### Important Notes
+
+**Detection Method:**
+- **Content-based, not extension-based**: A file named `archive.xyz` will be detected correctly if it has valid compression structure
+- **Reliable**: Uses standard Python libraries (`zipfile`, `tarfile`, `gzip`, `bz2`) with magic byte detection
+- **Safe**: Won't try to extract files that aren't actually compressed
+
+**Processing:**
+- File filtering (via `file_mask`) and limits (via `max_files`) apply to **extracted files**, not archive names
+- All extracted files must match the format specified in the configuration
+- Temporary extraction directories are automatically cleaned up (even on errors)
+- For `.gz` and `.bz2`: Output filename is derived by removing the compression extension
 
 ---
 

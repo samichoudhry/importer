@@ -23,8 +23,11 @@ ENV/
 Thumbs.db
 
 # Output
-output/
-*.csv
+output/*.csv
+output/*.json
+output/*.xml
+output/*.txt
+!output/.gitkeep
 *.log
 
 # Testing
@@ -33,6 +36,8 @@ output/
 htmlcov/
 .tox/
 *.cover
+.mypy_cache/
+.ruff_cache/
 
 # Distribution
 dist/

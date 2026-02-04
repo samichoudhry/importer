@@ -187,7 +187,7 @@ class TestConfigValidation:
         }
         config = ParserConfig.from_dict(original)
         legacy_dict = config.to_legacy_dict()
-        
+
         assert legacy_dict["format_type"] == "csv"
         assert legacy_dict["continueOnError"] is True
         assert len(legacy_dict["records"]) == 1

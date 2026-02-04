@@ -1,0 +1,13 @@
+{
+  "format_type": "csv",
+  "csv_delimiter": ",",
+  "csv_has_header": true,
+  "records": [{
+    "name": "People",
+    "fields": [
+      {"name": "Name", "path": "Name", "type": "string"},
+      {"name": "Age", "path": "Age", "type": "integer"},
+      {"name": "City", "path": "City", "type": "string"}
+    ]
+  }]
+}

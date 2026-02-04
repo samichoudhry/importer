@@ -2,10 +2,11 @@
 
 import csv
 import json
-from multi_format_parser.orchestrator import parse_files
 from pathlib import Path
 
 import pytest
+
+from multi_format_parser.orchestrator import parse_files
 
 
 def test_fixed_width_parser_basic(sample_fixed_width_file, sample_fixed_width_config, temp_output_dir):
@@ -35,7 +36,7 @@ def test_fixed_width_parser_basic(sample_fixed_width_file, sample_fixed_width_co
     assert output_file.exists()
 
     # Verify output content
-    with open(output_file, 'r') as f:
+    with open(output_file) as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         assert len(rows) == 3

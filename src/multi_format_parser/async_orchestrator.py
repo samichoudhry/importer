@@ -56,16 +56,16 @@ async def parse_files_async(
     total_stats = {"processed": 0, "succeeded": 0, "failed": 0}
     all_record_stats: Dict[str, ParsingStats] = {}
     all_errors: Dict[str, str] = {}
-    
+
     # Create semaphore to limit concurrency
     semaphore = asyncio.Semaphore(max_concurrent)
-    
+
     async def process_one_file(file_path: Path) -> Tuple[bool, Optional[str]]:
         """Process a single file with semaphore control."""
         async with semaphore:
             # Run synchronous parse_files in executor to avoid blocking
             loop = asyncio.get_event_loop()
-            
+
             try:
                 stats, record_stats, errors = await loop.run_in_executor(
                     None,
@@ -76,44 +76,45 @@ async def parse_files_async(
                     dry_run,
                     fail_fast
                 )
-                
+
                 # Merge results
                 total_stats["processed"] += stats["processed"]
                 total_stats["succeeded"] += stats["succeeded"]
                 total_stats["failed"] += stats["failed"]
-                
+
                 all_record_stats.update(record_stats)
                 all_errors.update(errors)
-                
+
                 success = stats["succeeded"] > 0
                 error_msg = errors.get(str(file_path)) if errors else None
-                
+
                 return success, error_msg
-                
+
             except Exception as e:
                 logger.error(f"Error processing {file_path}: {e}")
                 total_stats["processed"] += 1
                 total_stats["failed"] += 1
                 all_errors[str(file_path)] = str(e)
                 return False, str(e)
-    
+
     # Process files concurrently
-    tasks = [process_one_file(file_path) for file_path in input_files]
-    
+    # Create tasks from coroutines
+    task_objects = [asyncio.create_task(process_one_file(file_path)) for file_path in input_files]
+
     if fail_fast:
         # Stop on first error
-        for coro in asyncio.as_completed(tasks):
-            success, error = await coro
+        for task in asyncio.as_completed(task_objects):
+            success, error = await task
             if not success and fail_fast:
                 # Cancel remaining tasks
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
+                for t in task_objects:
+                    if not t.done():
+                        t.cancel()
                 break
     else:
         # Process all files regardless of errors
-        await asyncio.gather(*tasks, return_exceptions=True)
-    
+        await asyncio.gather(*task_objects, return_exceptions=True)
+
     return total_stats, all_record_stats, all_errors
 
 
@@ -146,14 +147,14 @@ async def parse_file_batches_async(
     total_stats = {"processed": 0, "succeeded": 0, "failed": 0}
     all_record_stats: Dict[str, ParsingStats] = {}
     all_errors: Dict[str, str] = {}
-    
+
     # Process in batches
     for i in range(0, len(input_files), batch_size):
         batch = input_files[i:i + batch_size]
-        
+
         logger.info(f"Processing batch {i // batch_size + 1} "
                    f"({len(batch)} files, {i + 1}-{i + len(batch)} of {len(input_files)})")
-        
+
         stats, record_stats, errors = await parse_files_async(
             config_path=config_path,
             input_files=batch,
@@ -162,19 +163,19 @@ async def parse_file_batches_async(
             fail_fast=fail_fast,
             max_concurrent=max_concurrent
         )
-        
+
         # Merge results
         total_stats["processed"] += stats["processed"]
         total_stats["succeeded"] += stats["succeeded"]
         total_stats["failed"] += stats["failed"]
-        
+
         all_record_stats.update(record_stats)
         all_errors.update(errors)
-        
+
         if fail_fast and errors:
             logger.warning("Stopping batch processing due to fail_fast")
             break
-    
+
     return total_stats, all_record_stats, all_errors
 
 

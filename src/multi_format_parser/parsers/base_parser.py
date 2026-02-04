@@ -30,7 +30,7 @@ class BaseParser:
     - Progress logging
     """
 
-    def __init__(self, file_path: Path, config: dict, writer: Optional[CSVWriter], 
+    def __init__(self, file_path: Path, config: dict, writer: Optional[CSVWriter],
                  stats: dict, record_stats: Dict[str, ParsingStats]):
         """Initialize parser with common configuration.
         
@@ -46,16 +46,16 @@ class BaseParser:
         self.writer = writer
         self.stats = stats
         self.record_stats = record_stats
-        
+
         # Extract common configuration flags
         self.ignore_broken = self._get_config_flag("ignoreBrokenFiles", False)
         self.continue_on_error = self._get_config_flag("continueOnError", False)
         self.progress_interval = config.get("progress_interval", 10000)
         self.safe_mode = config.get("normalization", {}).get("cast_mode", "safe") == "safe"
-        
+
         # Pre-build computed fields dictionary
         self.computed_fields = {c["name"]: c for c in config.get("computed_fields", [])}
-        
+
         # Initialize stats for all records upfront
         self._initialize_record_stats()
 
@@ -69,7 +69,7 @@ class BaseParser:
         Returns:
             Configuration flag value
         """
-        return (self.config.get(flag_name, default) or 
+        return (self.config.get(flag_name, default) or
                 self.config.get("parser", {}).get(flag_name, default))
 
     def _initialize_record_stats(self) -> None:
@@ -154,7 +154,7 @@ class BaseParser:
                     row[field_name] = cast_value(computed_value, field_type, self.safe_mode)
         return row
 
-    def validate_and_write_row(self, record_name: str, row: Dict[str, any], 
+    def validate_and_write_row(self, record_name: str, row: Dict[str, any],
                                columns: List[str], field_defs: List[FieldDef],
                                row_num: Optional[int] = None) -> bool:
         """Validate row data and write to output or rejected file.
@@ -189,7 +189,7 @@ class BaseParser:
             self.record_stats[record_name].success_rows += 1
             if self.writer:
                 self.writer.write_row(record_name, row, columns)
-            
+
             # Update stats counter
             self.stats[record_name] = self.stats.get(record_name, 0) + 1
             return True
@@ -205,7 +205,7 @@ class BaseParser:
         if self.progress_interval > 0 and row_num % self.progress_interval == 0:
             logger.info(f"[{record_name}] Processed {row_num:,} rows ({total_processed:,} total)")
 
-    def handle_row_error(self, record_name: str, error: Exception, 
+    def handle_row_error(self, record_name: str, error: Exception,
                         row_num: Optional[int] = None) -> None:
         """Handle row-level parsing errors based on continueOnError setting.
         
@@ -220,7 +220,7 @@ class BaseParser:
         row_info = f" at row {row_num}" if row_num else ""
         logger.error(f"Error processing {record_name}{row_info}: {error}")
         self.record_stats[record_name].skipped_rows += 1
-        
+
         if not self.continue_on_error:
             raise
 
@@ -239,7 +239,7 @@ class BaseParser:
             Exception: Re-raises error if ignoreBrokenFiles is False
         """
         error_msg = str(error)
-        
+
         if self.ignore_broken:
             logger.error(f"File parsing failed: {error_msg} (continuing due to ignoreBrokenFiles)")
             # Track file-level failures in stats

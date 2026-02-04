@@ -23,7 +23,7 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
         Tuple[bool, Optional[str]]: (success, error_message)
     """
     parser_obj = BaseParser(csv_path, config, writer, stats, record_stats)
-    
+
     try:
         delimiter = config.get("csv_delimiter", ",")
         quotechar = config.get("csv_quotechar", '"')
@@ -36,7 +36,7 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
         # Pre-build field mappings for all records
         record_field_maps = []
 
-        with open(csv_path, 'r', encoding=encoding, newline='') as f:
+        with open(csv_path, encoding=encoding, newline='') as f:
             for _ in range(skip_rows):
                 next(f, None)
 
@@ -83,7 +83,7 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
             row_num = 0
             for csv_row in reader:
                 row_num += 1
-                
+
                 # Log progress periodically
                 parser_obj.log_progress("CSV", row_num, row_num)
 
@@ -124,7 +124,7 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
                                         col_idx = int(path_key)
                                     except ValueError:
                                         col_idx = None
-                                
+
                                 if col_idx is not None and 0 <= col_idx < len(csv_row):
                                     cell = csv_row[col_idx].strip()
                                     row[ctx["name"]] = cast_value(cell, "string", parser_obj.safe_mode)
@@ -158,7 +158,7 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
 
                         record_name = record["name"]
                         record_stats[record_name].total_rows += 1
-                        
+
                         # Validate and write row
                         parser_obj.validate_and_write_row(record_name, row, columns, field_defs, row_num)
 
@@ -166,7 +166,7 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
                         # If you need ALL records to process each row, remove this break
                         row_processed = True
                         break
-                    
+
                     except Exception as row_error:
                         # Handle row-level errors using base parser
                         parser_obj.handle_row_error(record["name"], row_error, row_num)
@@ -174,6 +174,6 @@ def parse_csv(csv_path: Path, config: dict, writer: Optional[CSVWriter], stats: 
 
         parser_obj.finalize_stats()
         return (True, None)
-    
+
     except (FileNotFoundError, PermissionError, UnicodeDecodeError, Exception) as e:
         return parser_obj.handle_file_error(e)

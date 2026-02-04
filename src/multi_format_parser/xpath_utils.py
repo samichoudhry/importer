@@ -8,7 +8,7 @@ in the multi-format parser, including XML to JSON conversion for variant fields.
 import json
 import logging
 import re
-from typing import Any, List, Optional, Union
+from typing import Any
 
 try:
     from lxml import etree
@@ -79,59 +79,59 @@ def xml_element_to_json(
     """
     if not HAS_LXML:
         raise ImportError("lxml is required for XML to JSON conversion")
-    
+
     if not HAS_XMLTODICT:
         raise ImportError(
             "xmltodict is required for JSON field type. Install: pip install xmltodict"
         )
-    
+
     # Handle None/empty input
     if element is None:
         return None
-    
+
     # Normalize to list
     if not isinstance(element, list):
         elements = [element]
     else:
         elements = element
-    
+
     # Filter out non-Element types
     elements = [e for e in elements if isinstance(e, etree._Element)]
-    
+
     if not elements:
         return None
-    
+
     # Convert each element to dict
     result_dicts = []
     for elem in elements:
         try:
             # Convert XML to string
             xml_str = etree.tostring(elem, encoding='unicode')
-            
+
             # Parse to dict using xmltodict
             parsed = xmltodict.parse(xml_str)
-            
+
             # Clean namespaces if requested
             if clean_namespaces:
                 parsed = _clean_namespaces_from_dict(parsed)
-            
+
             result_dicts.append(parsed)
-            
+
         except Exception as e:
             logger.warning(f"Failed to convert XML element to JSON: {e}")
             # Fallback: store element tag name
             result_dicts.append({elem.tag: "[conversion error]"})
-    
+
     # Determine output format
     if len(result_dicts) == 1 and not force_list:
         result = result_dicts[0]
     else:
         result = result_dicts
-    
+
     # Serialize to JSON
     try:
         json_str = json.dumps(result, ensure_ascii=False)
-        
+
         # Check size and warn if large
         size = len(json_str)
         if size > MAX_JSON_FIELD_SIZE:
@@ -140,9 +140,9 @@ def xml_element_to_json(
                 f"({MAX_JSON_FIELD_SIZE} bytes). This may cause issues with "
                 f"CSV tools and databases. Consider restructuring data."
             )
-        
+
         return json_str
-        
+
     except (TypeError, ValueError) as e:
         logger.error(f"Failed to serialize to JSON: {e}")
         return None
