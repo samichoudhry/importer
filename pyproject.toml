@@ -34,6 +34,29 @@ black = ">=23.0.0"
 mypy = ">=1.7.0"
 pre-commit = ">=3.5.0"
 
+[project]
+name = "multi-format-parser"
+version = "1.0.0"
+description = "Production-ready parser for XML, CSV, Fixed-Width, and JSON files"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "lxml>=4.9.0",
+    "pydantic>=2.0.0",
+    "xmltodict>=0.13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.1.0",
+    "black>=23.0.0",
+    "mypy>=1.7.0",
+    "pre-commit>=3.5.0",
+]
+
 [tool.poetry.scripts]
 multiformat-parser = "multi_format_parser.cli:main"
 
